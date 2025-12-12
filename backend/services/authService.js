@@ -109,9 +109,7 @@ export const refreshToken = async (providedRefreshToken) => {
   }
 };
 
-/**
- * LOGOUT USER
- */
+
 export const logout = async (userId) => {
   await prisma.user.update({
     where: { id: userId },

@@ -14,6 +14,7 @@ enum Sex {
 enum Role {
   AGENT
   STUDENT
+  
 }
 
 model User {

@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum Role {
+  AGENT
+  STUDENT
+}
+
+model User {
+  id          Int    @id @default(autoincrement())
+  first_name  String
+  last_name   String
+  sex         Sex
+  cin         String @unique
+  phoneNumber String
+  email       String @unique
+  password    String
+  role        Role
+
+  student Student?        @relation("UserStudent")
+  agent   SchoolingAgent? @relation("UserAgent")
+}
+
+model Student {
+  id                Int    @unique
+  user              User   @relation("UserStudent", fields: [id], references: [id])
+  baccalaureateType String
+  baccalaureateYear Int
+  statusCodeStudent String
+
+  Inscription Inscription[]
+}
+
+model SchoolingAgent {
+  id             Int      @id
+  user           User     @relation("UserAgent", fields: [id], references: [id])
+  employmentDate DateTime
+  position       String?
+  department     String?
+  salary         Float?
+  phoneNumber    String?
+
+  Inscription Inscription[]
+}
+
+enum STATUS {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+model Inscription {
+  id                 Int       @id @default(autoincrement())
+  status             STATUS // par ex: "PENDING", "VALIDATED", "REJECTED"
+  submissionDate     DateTime
+  validationDate     DateTime?
+  rejectionComment   String?
+  isFirstInscription Boolean
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  agentId Int?
+  agent   SchoolingAgent? @relation(fields: [agentId], references: [id])
+
+  majorId Int
+  major   Major @relation(fields: [majorId], references: [id])
+
+  documents      Document[]
+  certifications Certification[]
+}
+
+model Major {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  name         String
+  department   String
+  isActive     Boolean
+  inscriptions Inscription[]
+}
+
+model Document {
+  id           Int      @id @default(autoincrement())
+  isVerified   Boolean
+  uploadDate   DateTime
+  fileSize     Int
+  filePath     String
+  fileName     String
+  documentType String
+
+  inscriptionId Int?
+  inscription   Inscription? @relation(fields: [inscriptionId], references: [id])
+}
+
+model Certification {
+  id                  Int      @id @default(autoincrement()) // certification_id
+  certificationNumber String   @unique
+  filePath            String
+  generationDate      DateTime
+
+  inscriptionId Int?
+  inscription   Inscription? @relation(fields: [inscriptionId], references: [id])
+}

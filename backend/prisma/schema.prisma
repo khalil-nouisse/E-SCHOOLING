@@ -26,6 +26,10 @@ model User {
   email       String @unique
   password    String
   role        Role
+  isVerified  Boolean @default(false)
+  otp         Int
+  otpExpires  DateTime?
+  refreshToken String?
 
   student Student?        @relation("UserStudent")
   agent   SchoolingAgent? @relation("UserAgent")

@@ -1,0 +1,16 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Vite
+frontend/dist/
+
+# env
+*.env
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store

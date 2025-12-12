@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-const mainApiRouter = require('/route/index')
+const mainApiRouter = require('/routes/index')
 
 
 const whiteList = ['http://localhost:5173', 'http://localhost:5174'];
@@ -15,7 +15,9 @@ const corsOptions = {
 
         if (whiteList.indexOf(origin) !== -1) {
             callback(null, true);
-        } else {
+        }
+        
+        else {
             callback(new Error('Not Allowed by CORS'));
         }
     },
@@ -25,7 +27,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.use(express.json());    
 
 app.use('/api', mainApiRouter)
 

@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import prisma from '../prisma.js';
-import sendEmail from '../../utils/sendEmail.js';
+import prisma from '../src/prisma.js';
+import sendEmail from '../utils/sendEmail.js';
 import dotenv from 'dotenv';
 dotenv.config();
 

@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-const mainApiRouter = require('/routes/index')
+const mainApiRouter = require('./routes/index')
+
 
 
 const whiteList = ['http://localhost:5173', 'http://localhost:5174'];

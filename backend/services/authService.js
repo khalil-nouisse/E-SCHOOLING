@@ -1,14 +1,13 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import prisma from '../src/prisma.js';
-import sendEmail from '../utils/sendEmail.js';
-import dotenv from 'dotenv';
-dotenv.config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const prisma = require('../src/prisma.js');
+const sendEmail = require('../utils/sendEmail.js');
+require('dotenv').config();
 
 const { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } = process.env;
 
 
-export const register = async (firstName, lastName, email, password) => {
+const register = async (firstName, lastName, email, password, sex = null, cin = null, phoneNumber = null) => {
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
@@ -25,8 +24,8 @@ export const register = async (firstName, lastName, email, password) => {
   const hashedPassword = await bcrypt.hash(password, salt);
 
   // Generate OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const otp1 = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpires1 = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   // Create user in database
   const user = await prisma.user.create({
@@ -35,15 +34,18 @@ export const register = async (firstName, lastName, email, password) => {
       last_name: lastName,
       email,
       password: hashedPassword,
+      sex,
+      cin,
+      phoneNumber,
       role: 'STUDENT',
-      otp,
-      otpExpires,
+      otp: parseInt(otp1), // Ensure otp is an Int based on schema
+      otpExpires: otpExpires1,
       isVerified: false,
     },
   });
 
   // Send OTP email
-  await sendEmail(email, otp);
+  await sendEmail(email, otp1);
 
   return {
     id: user.id,
@@ -54,7 +56,7 @@ export const register = async (firstName, lastName, email, password) => {
 };
 
 
-export const login = async (email, password) => {
+const login = async (email, password) => {
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) throw new Error('User not found');
@@ -83,7 +85,7 @@ export const login = async (email, password) => {
 };
 
 
-export const refreshToken = async (providedRefreshToken) => {
+const refreshToken = async (providedRefreshToken) => {
   try {
     const decoded = jwt.verify(providedRefreshToken, REFRESH_TOKEN_SECRET);
 
@@ -110,7 +112,7 @@ export const refreshToken = async (providedRefreshToken) => {
 };
 
 
-export const logout = async (userId) => {
+const logout = async (userId) => {
   await prisma.user.update({
     where: { id: userId },
     data: { refreshToken: null },
@@ -122,11 +124,14 @@ export const logout = async (userId) => {
 /**
  * VERIFY OTP
  */
-export const verifyOTP = async (email, otp) => {
+const verifyOTP = async (email, otp) => {
   const user = await prisma.user.findUnique({ where: { email } });
 
   if (!user) throw new Error('User not found');
-  if (user.otp !== otp) throw new Error('Invalid OTP');
+
+  // Convert inputs to comparable types if needed
+  // Schema says otp is Int. 
+  if (user.otp !== parseInt(otp)) throw new Error('Invalid OTP');
   if (user.otpExpires < new Date()) throw new Error('OTP has expired');
 
   await prisma.user.update({
@@ -135,4 +140,12 @@ export const verifyOTP = async (email, otp) => {
   });
 
   return { message: 'Account verified successfully' };
+};
+
+module.exports = {
+  register,
+  login,
+  refreshToken,
+  logout,
+  verifyOTP
 };

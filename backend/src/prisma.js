@@ -1,18 +1,5 @@
-// Lazy Prisma client helper — require and create client at runtime only
-// Use: const getPrisma = require('./src/prisma'); const prisma = getPrisma();
+const { PrismaClient } = require('@prisma/client');
 
-let prisma = null;
+const prisma = new PrismaClient();
 
-function getPrisma() {
-  if (prisma) return prisma;
-  try {
-    const { PrismaClient } = require('@prisma/client');
-    prisma = new PrismaClient();
-    return prisma;
-  } catch (err) {
-    
-    throw new Error('@prisma/client not found — run `npm install` and `npx prisma generate`');
-  }
-}
-
-module.exports = getPrisma;
+module.exports = prisma;

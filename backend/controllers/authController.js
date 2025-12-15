@@ -3,14 +3,14 @@ const authService = require('../services/authService');
 
 const register = async (req, res) => {
   try {
-    const { firstname, lastname, email, password } = req.body;
+    const { firstname, lastname, email, password, sex, cin, phoneNumber } = req.body;
 
     // Simple validation
     if (!firstname || !lastname || !email || !password) {
       return res.status(400).json({ message: 'All data required.' });
     }
 
-    const user = await authService.register(firstname, lastname, email, password);
+    const user = await authService.register(firstname, lastname, email, password, sex, cin, phoneNumber);
     res.status(201).json({ message: 'User created successfully', user });
 
   } catch (error) {

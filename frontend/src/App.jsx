@@ -6,6 +6,9 @@ import Applications from './pages/Applications';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Settings from './pages/Settings';
+import OnboardingWizard from './pages/candidate/OnboardingWizard';
+import CandidateDashboard from './pages/candidate/CandidateDashboard';
 
 function App() {
   return (
@@ -15,9 +18,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        <Route path="/candidate/onboarding" element={<OnboardingWizard />} />
+        <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
+
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/applications" element={<Applications />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

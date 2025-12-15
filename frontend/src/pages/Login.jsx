@@ -22,10 +22,21 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+
+        // Get email from form
+        const email = e.target.elements.email.value;
+
         // Simulate API call
         setTimeout(() => {
             setIsLoading(false);
-            navigate('/dashboard');
+            if (email.includes('admin')) {
+                navigate('/dashboard');
+            } else if (email.includes('new')) {
+                navigate('/candidate/onboarding');
+            } else {
+                // Default to returning candidate dashboard
+                navigate('/candidate/dashboard');
+            }
         }, 1500);
     };
 

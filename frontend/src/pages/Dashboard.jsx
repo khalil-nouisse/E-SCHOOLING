@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { Users, FileText, CheckCircle, Clock, ArrowRight } from 'lucide-react';
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/Dialog';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
+import { Users, FileText, CheckCircle, Clock, ArrowRight, Trash2, Edit2 } from 'lucide-react';
 
 const Dashboard = () => {
+    // Modal State
+    const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
+    const [manageUsersView, setManageUsersView] = useState('list'); // 'list', 'add', 'edit'
+    const [editingUser, setEditingUser] = useState(null);
+    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'Student' });
+
+    // Mock Data for Users
+    const [users, setUsers] = useState([
+        { id: 1, name: 'John Doe', email: 'john@university.edu', role: 'Admin' },
+        { id: 2, name: 'Jane Smith', email: 'jane@university.edu', role: 'Registrar' },
+        { id: 3, name: 'Robert Brown', email: 'robert@university.edu', role: 'Faculty' },
+    ]);
+
     const stats = [
         { label: 'Total Applications', value: '1,234', change: '+12%', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
         { label: 'Pending Review', value: '45', change: '-2%', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -19,6 +35,41 @@ const Dashboard = () => {
         { id: 4, name: 'Diana Prince', program: 'Physics', status: 'neutral', date: '5 hours ago' },
     ];
 
+    const handleDeleteUser = (id) => {
+        setUsers(users.filter(user => user.id !== id));
+    };
+
+    const handleEditUser = (user) => {
+        setEditingUser(user);
+        setNewUserData({ name: user.name, email: user.email, role: user.role });
+        setManageUsersView('edit');
+    };
+
+    const handleAddUser = () => {
+        setNewUserData({ name: '', email: '', role: 'Student' });
+        setManageUsersView('add');
+    };
+
+    const handleSaveUser = (e) => {
+        e.preventDefault();
+        if (manageUsersView === 'add') {
+            const newUser = {
+                id: users.length + 1,
+                ...newUserData
+            };
+            setUsers([...users, newUser]);
+        } else if (manageUsersView === 'edit') {
+            setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...newUserData } : u));
+        }
+        setManageUsersView('list');
+    };
+
+    // Reset view when closing dialog
+    const handleOpenChange = (open) => {
+        setIsManageUsersOpen(open);
+        if (!open) setTimeout(() => setManageUsersView('list'), 300);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -26,10 +77,6 @@ const Dashboard = () => {
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
                     <p className="text-sm text-slate-500">Overview of your university management status.</p>
                 </div>
-                <Button>
-                    <FileText className="mr-2 h-4 w-4" />
-                    New Application
-                </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -96,7 +143,11 @@ const Dashboard = () => {
                             Generate Reports
                             <ArrowRight className="h-4 w-4" />
                         </Button>
-                        <Button variant="secondary" className="w-full justify-between bg-indigo-500/10 border-indigo-500/20 text-white hover:bg-indigo-500/20">
+                        <Button
+                            onClick={() => setIsManageUsersOpen(true)}
+                            variant="secondary"
+                            className="w-full justify-between bg-indigo-500/10 border-indigo-500/20 border border-white text-white hover:bg-indigo-500/20"
+                        >
                             Manage Users
                             <ArrowRight className="h-4 w-4" />
                         </Button>
@@ -110,6 +161,123 @@ const Dashboard = () => {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Manage Users Dialog */}
+            <Dialog open={isManageUsersOpen} onOpenChange={handleOpenChange}>
+                <DialogHeader>
+                    <DialogTitle>{manageUsersView === 'list' ? 'Manage Users' : manageUsersView === 'add' ? 'Add New User' : 'Edit User'}</DialogTitle>
+                    <DialogDescription>
+                        {manageUsersView === 'list'
+                            ? 'View, edit, or remove users from the system.'
+                            : 'Enter user details below.'}
+                    </DialogDescription>
+                </DialogHeader>
+
+                {manageUsersView === 'list' && (
+                    <>
+                        <div className="my-6 max-h-[60vh] overflow-y-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-slate-50 text-slate-500 sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium">Name</th>
+                                        <th className="px-4 py-3 font-medium">Role</th>
+                                        <th className="px-4 py-3 font-medium text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {users.map((user) => (
+                                        <tr key={user.id} className="hover:bg-slate-50/50">
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-slate-900">{user.name}</div>
+                                                <div className="text-xs text-slate-500">{user.email}</div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge variant="neutral" className="font-normal">{user.role}</Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+                                                        onClick={() => handleEditUser(user)}
+                                                    >
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                                                        onClick={() => handleDeleteUser(user.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="secondary" onClick={() => setIsManageUsersOpen(false)}>
+                                Close
+                            </Button>
+                            <Button onClick={handleAddUser}>
+                                Add New User
+                            </Button>
+                        </DialogFooter>
+                    </>
+                )}
+
+                {(manageUsersView === 'add' || manageUsersView === 'edit') && (
+                    <form onSubmit={handleSaveUser} className="space-y-4 my-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="name">Full Name</Label>
+                            <Input
+                                id="name"
+                                value={newUserData.name}
+                                onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                                placeholder="e.g. Jane Doe"
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                value={newUserData.email}
+                                onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                                placeholder="jane@example.com"
+                                required
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="role">Role</Label>
+                            <select
+                                id="role"
+                                className="flex h-10 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500"
+                                value={newUserData.role}
+                                onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+                            >
+                                <option value="Student">Student</option>
+                                <option value="Faculty">Faculty</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Registrar">Registrar</option>
+                            </select>
+                        </div>
+                        <DialogFooter className="mt-6">
+                            <Button type="button" variant="secondary" onClick={() => setManageUsersView('list')}>
+                                Cancel
+                            </Button>
+                            <Button type="submit">
+                                {manageUsersView === 'add' ? 'Create User' : 'Save Changes'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                )}
+            </Dialog>
         </div>
     );
 };

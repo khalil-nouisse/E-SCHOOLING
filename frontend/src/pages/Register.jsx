@@ -15,7 +15,7 @@ const Register = () => {
         // Simulate API call
         setTimeout(() => {
             setIsLoading(false);
-            navigate('/dashboard');
+            navigate('/candidate/onboarding');
         }, 1500);
     };
 

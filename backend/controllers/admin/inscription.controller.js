@@ -1,5 +1,5 @@
 // inscription.controller.js
-const service = require('../services/adminService/InscriptionAdminService');
+const service = require('../../services/admin/inscription.service');
 const path = require('path');
 
 exports.list = async (req, res) => {

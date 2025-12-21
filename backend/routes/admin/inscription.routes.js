@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/InscriptionAdminController');
+const controller = require('../../controllers/admin/inscription.controller');
 
 router.get('/', controller.list);
 router.get('/:id', controller.details);

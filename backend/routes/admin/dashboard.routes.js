@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const controller = require('../controllers/DashboardController');
+const controller = require('../../controllers/admin/dashboard.controller');
 
 router.get('/stats', controller.stats);
 

@@ -1,4 +1,4 @@
-const service = require('../services/adminService/DashboardService');
+const service = require('../../services/admin/dashboard.service');
 
 exports.stats = async (req, res) => {
   try {

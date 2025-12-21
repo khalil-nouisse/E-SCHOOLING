@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const userController = require('../controllers/UserControllerDashboard');
+const userController = require('../../controllers/admin/user.controller');
 
 //manage user by the admin
 

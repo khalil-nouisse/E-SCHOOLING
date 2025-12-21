@@ -5,8 +5,7 @@ const studentProfileController = require('../../controllers/student/student.prof
 
 router.get('/', studentProfileController.getStudentInfo);
 
-router.post('/');
-
-router.put('/');
+// router.post('/');
+// router.put('/');
 
 module.exports = router;

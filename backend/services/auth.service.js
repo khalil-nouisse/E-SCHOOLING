@@ -37,7 +37,7 @@ const register = async (firstName, lastName, email, password, sex = null, cin = 
       sex,
       cin,
       phoneNumber,
-      role: 'STUDENT',
+      role: 'CANDIDATE',
       otp: parseInt(otp1), // Ensure otp is an Int based on schema
       otpExpires: otpExpires1,
       isVerified: false,

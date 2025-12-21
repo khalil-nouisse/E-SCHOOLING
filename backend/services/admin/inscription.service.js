@@ -3,11 +3,7 @@ const prisma = require('../../src/prisma');
 async function getAllInscriptions() {
   return prisma.inscription.findMany({
     include: {
-      student: {
-        include: {
-          user: true
-        }
-      },
+      user: true,
       major: true
     },
     orderBy: {
@@ -26,11 +22,7 @@ async function getInscriptionById(id) {
   return prisma.inscription.findUnique({
     where: { id },
     include: {
-      student: {
-        include: {
-          user: true
-        }
-      },
+      user: true,
       major: true,
       documents: true,
       certifications: true,
@@ -60,18 +52,14 @@ async function getRecentApplications(limit = 4) {
     take: limit,
     orderBy: { submissionDate: 'desc' },
     include: {
-      student: {
-        include: {
-          user: true
-        }
-      },
+      user: true,
       major: true
     }
   });
 
   return inscriptions.map(i => ({
     id: i.id,
-    name: `${i.student.user.first_name} ${i.student.user.last_name}`,
+    name: `${i.user.first_name} ${i.user.last_name}`,
     program: i.major.name,
     status: i.status,
     date: i.submissionDate

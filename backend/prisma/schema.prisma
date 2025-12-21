@@ -23,14 +23,12 @@ model User {
   refreshToken String?
   agent        SchoolingAgent? @relation("UserAgent")
   student      Student?        @relation("UserStudent")
+  inscriptions Inscription[]
 }
 
 model Student {
   id                Int           @unique
-  baccalaureateType String
-  baccalaureateYear Int
   statusCodeStudent String
-  Inscription       Inscription[]
   user              User          @relation("UserStudent", fields: [id], references: [id])
 }
 
@@ -52,14 +50,16 @@ model Inscription {
   validationDate     DateTime?
   rejectionComment   String?
   isFirstInscription Boolean
-  studentId          Int
+  baccalaureateType  String
+  baccalaureateYear  Int
+  userId             Int
   agentId            Int?
   majorId            Int
   certifications     Certification[]
   documents          Document[]
   agent              SchoolingAgent? @relation(fields: [agentId], references: [id])
   major              Major           @relation(fields: [majorId], references: [id])
-  student            Student         @relation(fields: [studentId], references: [id])
+  user               User            @relation(fields: [userId], references: [id])
 }
 
 model Major {
@@ -100,6 +100,7 @@ enum Sex {
 enum Role {
   AGENT
   STUDENT
+  CANDIDATE
 }
 
 enum STATUS {

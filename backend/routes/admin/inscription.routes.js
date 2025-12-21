@@ -2,11 +2,14 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../../controllers/admin/inscription.controller');
 
+
+// Specific routes MUST come before wildcard routes like /:id
+router.get('/recent-applications', controller.recentApplications);
+router.get('/download', controller.downloadDocument);
+
 router.get('/', controller.list);
 router.get('/:id', controller.details);
-router.get('/download', controller.downloadDocument);
 router.patch('/:id/status', controller.updateStatus);
-router.get('/recent-applications', controller.recentApplications);
 
 
 module.exports = router;

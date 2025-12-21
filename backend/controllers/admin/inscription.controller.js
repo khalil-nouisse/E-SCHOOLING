@@ -65,10 +65,11 @@ exports.downloadDocument = async (req, res) => {
 
 exports.recentApplications = async (req, res) => {
   try {
-    const data = await service.getRecentApplications(req.query.limit || 5);
+    const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+    const data = await service.getRecentApplications(limit);
     res.json(data);
   } catch (error) {
-    console.error('Error fetching recent applications:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('FULL ERROR in recentApplications:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

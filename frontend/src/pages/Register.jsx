@@ -12,11 +12,35 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
+
+        const firstName = e.target.elements.firstname.value;
+        const lastName = e.target.elements.lastname.value;
+        const email = e.target.elements.email.value;
+        const password = e.target.elements.password.value;
+        const confirmPassword = e.target.elements['confirm-password'].value;
+
+        if (password !== confirmPassword) {
+            alert("Passwords do not match");
             setIsLoading(false);
-            navigate('/candidate/onboarding');
-        }, 1500);
+            return;
+        }
+
+        try {
+            const { AuthService } = await import('../lib/api');
+            await AuthService.register({
+                firstname: firstName,
+                lastname: lastName,
+                email,
+                password
+            });
+            // Auto login or redirect to login? Redirect is safer.
+            navigate('/login');
+        } catch (error) {
+            console.error("Registration failed", error);
+            alert("Registration failed: " + (error.response?.data?.message || error.message));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -59,16 +83,29 @@ const Register = () => {
                     <div className="grid gap-6">
                         <form onSubmit={handleSubmit}>
                             <div className="grid gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="name">Full Name</Label>
-                                    <Input
-                                        id="name"
-                                        placeholder="John Doe"
-                                        type="text"
-                                        autoCapitalize="words"
-                                        autoComplete="name"
-                                        disabled={isLoading}
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="firstname">First Name</Label>
+                                        <Input
+                                            id="firstname"
+                                            placeholder="John"
+                                            type="text"
+                                            autoCapitalize="words"
+                                            autoComplete="given-name"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="lastname">Last Name</Label>
+                                        <Input
+                                            id="lastname"
+                                            placeholder="Doe"
+                                            type="text"
+                                            autoCapitalize="words"
+                                            autoComplete="family-name"
+                                            disabled={isLoading}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="email">Email</Label>

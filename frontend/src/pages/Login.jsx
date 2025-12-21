@@ -37,10 +37,17 @@ const Login = () => {
             if (role === 'ADMIN') {
                 navigate('/dashboard');
             } else if (role === 'STUDENT') {
-                // Student dashboard? For now, maybe candidate dashboard or separate
                 navigate('/student/dashboard');
+            } else if (role === 'CANDIDATE') {
+                // Check if they already applied
+                if (data.hasApplication) {
+                    navigate('/student/dashboard');
+                } else {
+                    navigate('/candidate/onboarding');
+                }
             } else {
-                navigate('/candidate/dashboard'); // Or onboarding if new
+                // Default fallback
+                navigate('/candidate/onboarding');
             }
         } catch (error) {
             console.error("Login failed", error);

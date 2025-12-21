@@ -17,18 +17,19 @@ const corsOptions = {
         if (whiteList.indexOf(origin) !== -1) {
             callback(null, true);
         }
-        
+
         else {
             callback(new Error('Not Allowed by CORS'));
         }
     },
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json());    
+app.use(express.json());
 
 app.use('/api', mainApiRouter)
 

@@ -3,8 +3,7 @@ const service = require('../../services/student/inscription.service');
 exports.apply = async (req, res) => {
     try {
         console.log('Apply Payload:', req.body);
-        // Fallback for testing if authMiddleware is disabled
-        const userId = req.user ? req.user.id : 1;
+        const userId = req.user.id;
         console.log('User ID:', userId);
         const inscription = await service.createInscription(userId, req.body);
         res.status(201).json({ message: 'Application submitted successfully', inscription });

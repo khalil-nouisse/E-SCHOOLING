@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Settings from './pages/Settings';
 import OnboardingWizard from './pages/candidate/OnboardingWizard';
-import StudentDashboard from './pages/student/Dashboard';
+import StudentDashboard from './pages/candidate/CandidateDashboard';
 
 function App() {
   return (

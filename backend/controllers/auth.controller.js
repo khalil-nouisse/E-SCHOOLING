@@ -28,7 +28,7 @@ const login = async (req, res) => {
     return res.status(400).json({ message: 'email and password are required.' });
   }
   try {
-    const { refreshToken, accessToken } = await authService.login(email, password);
+    const { refreshToken, accessToken, user, hasApplication } = await authService.login(email, password);
 
     res.cookie('jwt', refreshToken, {
       httpOnly: true,
@@ -36,7 +36,7 @@ const login = async (req, res) => {
     });
 
 
-    res.status(200).json({ accessToken, refreshToken });
+    res.status(200).json({ accessToken, refreshToken, user, hasApplication });
   } catch (error) {
     console.error("Login Service Error:", error);
     res.status(401).json({ message: 'Login failed', error: error.message });

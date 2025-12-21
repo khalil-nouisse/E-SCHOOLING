@@ -3,6 +3,10 @@ const prisma = require('../../src/prisma');
 async function createInscription(userId, data) {
     const { majorId, baccalaureateType, baccalaureateYear } = data;
 
+    if (!majorId || isNaN(parseInt(majorId))) throw new Error("Invalid Major ID");
+    if (!baccalaureateYear || isNaN(parseInt(baccalaureateYear))) throw new Error("Invalid Baccalaureate Year");
+    if (!baccalaureateType) throw new Error("Baccalaureate Type is required");
+
     // Check if already applied to this major (optional logic)
     const existing = await prisma.inscription.findFirst({
         where: { userId, majorId }

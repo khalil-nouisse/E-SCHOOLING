@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
-import { CheckCircle, Circle, ArrowRight, ArrowLeft, Upload } from 'lucide-react';
+import { CheckCircle, Circle, ArrowRight, ArrowLeft, Upload, FileText } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { StudentService } from '../../lib/api';
 
 const steps = [
     { id: 1, name: 'Personal Info' },
@@ -17,6 +18,7 @@ const steps = [
 const OnboardingWizard = () => {
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
+    const [majors, setMajors] = useState([]);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -24,15 +26,58 @@ const OnboardingWizard = () => {
         address: '',
         bacYear: '',
         bacType: '',
+        majorId: '',
         program: ''
     });
+    const [selectedFile, setSelectedFile] = useState(null);
 
-    const handleNext = () => {
+    useEffect(() => {
+        const fetchMajors = async () => {
+            try {
+                const data = await StudentService.getMajors();
+                setMajors(data);
+            } catch (error) {
+                console.error("Failed to fetch majors", error);
+            }
+        };
+        fetchMajors();
+    }, []);
+
+    const handleFileChange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+            setSelectedFile(e.target.files[0]);
+        }
+    };
+
+    const handleNext = async () => {
         if (currentStep < steps.length) {
+            // Basic validation
+            if (currentStep === 3 && !formData.majorId) {
+                alert("Please select a program");
+                return;
+            }
             setCurrentStep(currentStep + 1);
         } else {
             // Submit
-            navigate('/candidate/dashboard');
+            try {
+                // 1. Create Inscription
+                const response = await StudentService.apply({
+                    majorId: parseInt(formData.majorId), // Ensure int
+                    baccalaureateType: formData.bacType,
+                    baccalaureateYear: parseInt(formData.bacYear) // Ensure int
+                });
+
+                // 2. Upload Document if exists
+                if (selectedFile && response.inscription && response.inscription.id) {
+                    await StudentService.uploadDocument(response.inscription.id, selectedFile);
+                }
+
+                navigate('/student/dashboard');
+            } catch (error) {
+                console.error("Application failed", error);
+                const serverError = error.response?.data?.error || error.response?.data?.message || error.message;
+                alert("Application failed: " + serverError);
+            }
         }
     };
 
@@ -44,8 +89,7 @@ const OnboardingWizard = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4">
-
-            {/* Steps Indicator */}
+            {/* Steps Indicator - Kept same as before */}
             <div className="w-full max-w-3xl mb-8">
                 <nav aria-label="Progress">
                     <ol role="list" className="flex items-center">
@@ -87,6 +131,7 @@ const OnboardingWizard = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {/* Step 1: Personal Info */}
                     {currentStep === 1 && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -110,12 +155,13 @@ const OnboardingWizard = () => {
                         </div>
                     )}
 
+                    {/* Step 2: Education */}
                     {currentStep === 2 && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="bacYear">Baccalaureat Year</Label>
-                                    <Input id="bacYear" placeholder="2023" value={formData.bacYear} onChange={(e) => setFormData({ ...formData, bacYear: e.target.value })} />
+                                    <Input id="bacYear" type="number" placeholder="2023" value={formData.bacYear} onChange={(e) => setFormData({ ...formData, bacYear: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="bacType">Baccalaureat Type</Label>
@@ -134,38 +180,63 @@ const OnboardingWizard = () => {
                             </div>
                             <div className="space-y-2">
                                 <Label>Upload Documents</Label>
-                                <div className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer">
-                                    <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                                    <p className="text-sm font-medium text-slate-700">Click to upload Baccalaureat Certificate</p>
-                                    <p className="text-xs text-slate-500 mt-1">PDF or JPG up to 5MB</p>
+                                <div
+                                    className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer relative"
+                                    onClick={() => document.getElementById('file-upload').click()}
+                                >
+                                    <input
+                                        id="file-upload"
+                                        type="file"
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                        accept=".pdf,image/*"
+                                    />
+                                    {selectedFile ? (
+                                        <>
+                                            <FileText className="h-8 w-8 text-indigo-500 mb-2" />
+                                            <p className="text-sm font-medium text-slate-700">{selectedFile.name}</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-8 w-8 text-slate-400 mb-2" />
+                                            <p className="text-sm font-medium text-slate-700">Click to upload Baccalaureat Certificate</p>
+                                            <p className="text-xs text-slate-500 mt-1">PDF or JPG up to 5MB</p>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Step 3: Program Selection */}
                     {currentStep === 3 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label>Select Desired Program</Label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    {['Computer Science', 'Business Administration', 'Engineering', 'Psychology'].map((prog) => (
-                                        <div
-                                            key={prog}
-                                            onClick={() => setFormData({ ...formData, program: prog })}
-                                            className={cn(
-                                                "p-4 rounded-lg border-2 cursor-pointer transition-all",
-                                                formData.program === prog ? "border-indigo-600 bg-indigo-50" : "border-slate-200 hover:border-slate-300"
-                                            )}
-                                        >
-                                            <p className="font-medium text-slate-900">{prog}</p>
-                                            <p className="text-xs text-slate-500 mt-1">Bachelor's Degree</p>
-                                        </div>
-                                    ))}
-                                </div>
+                                {majors.length === 0 ? (
+                                    <p className="text-sm text-slate-500">Loading programs...</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {majors.map((major) => (
+                                            <div
+                                                key={major.id}
+                                                onClick={() => setFormData({ ...formData, majorId: major.id, program: major.name })}
+                                                className={cn(
+                                                    "p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                                    formData.majorId === major.id ? "border-indigo-600 bg-indigo-50" : "border-slate-200 hover:border-slate-300"
+                                                )}
+                                            >
+                                                <p className="font-medium text-slate-900">{major.name}</p>
+                                                <p className="text-xs text-slate-500 mt-1">{major.department}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
+                    {/* Step 4: Review */}
                     {currentStep === 4 && (
                         <div className="space-y-6">
                             <div className="rounded-lg bg-indigo-50 p-4 border border-indigo-100">
@@ -185,7 +256,7 @@ const OnboardingWizard = () => {
                                     </div>
                                     <div>
                                         <dt className="text-xs font-medium text-indigo-600/70 uppercase">Documents</dt>
-                                        <dd className="text-sm font-medium text-indigo-900">1 File Uploaded</dd>
+                                        <dd className="text-sm font-medium text-indigo-900">{selectedFile ? selectedFile.name : 'No file uploaded'}</dd>
                                     </div>
                                 </dl>
                             </div>

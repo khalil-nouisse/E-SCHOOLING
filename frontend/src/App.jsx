@@ -8,7 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Settings from './pages/Settings';
 import OnboardingWizard from './pages/candidate/OnboardingWizard';
-import CandidateDashboard from './pages/candidate/CandidateDashboard';
+import StudentDashboard from './pages/student/Dashboard';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         <Route path="/candidate/onboarding" element={<OnboardingWizard />} />
-        <Route path="/candidate/dashboard" element={<CandidateDashboard />} />
+        <Route path="/student/dashboard" element={<StudentDashboard />} />
 
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />

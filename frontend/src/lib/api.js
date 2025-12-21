@@ -10,6 +10,38 @@ const api = axios.create({
     withCredentials: true, // For handling cookies if needed later
 });
 
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+export const AuthService = {
+    login: async (email, password) => {
+        const response = await api.post('/auth/login', { email, password });
+        if (response.data.accessToken) {
+            localStorage.setItem('token', response.data.accessToken);
+            localStorage.setItem('user', JSON.stringify(response.data.user || {}));
+        }
+        return response.data;
+    },
+    register: async (data) => {
+        const response = await api.post('/auth/register', data);
+        return response.data;
+    },
+    logout: () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    }
+};
+
 export const AdminService = {
     // Dashboard
     getDashboardStats: async () => {
@@ -51,6 +83,29 @@ export const AdminService = {
     },
     getRecentApplications: async (limit = 5) => {
         const response = await api.get(`/admin/inscriptions/recent-applications?limit=${limit}`);
+        return response.data;
+    }
+};
+
+export const StudentService = {
+    getMajors: async () => {
+        const response = await api.get('/student/majors');
+        return response.data;
+    },
+    apply: async (data) => {
+        const response = await api.post('/student/apply', data);
+        return response.data;
+    },
+    getMyApplications: async () => {
+        const response = await api.get('/student/my-applications');
+        return response.data;
+    },
+    uploadDocument: async (id, file) => {
+        const formData = new FormData();
+        formData.append('document', file);
+        const response = await api.post(`/student/upload/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
         return response.data;
     }
 };

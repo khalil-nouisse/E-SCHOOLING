@@ -23,21 +23,31 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
 
-        // Get email from form
         const email = e.target.elements.email.value;
+        const password = e.target.elements.password.value;
 
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            if (email.includes('admin')) {
+        try {
+            const { AuthService } = await import('../lib/api');
+            const data = await AuthService.login(email, password);
+
+            // Check roles to redirect (Assuming backend returns role)
+            // If payload structure varies, check `data.user.role`
+            const role = data.user?.role || 'CANDIDATE';
+
+            if (role === 'ADMIN') {
                 navigate('/dashboard');
-            } else if (email.includes('new')) {
-                navigate('/candidate/onboarding');
+            } else if (role === 'STUDENT') {
+                // Student dashboard? For now, maybe candidate dashboard or separate
+                navigate('/student/dashboard');
             } else {
-                // Default to returning candidate dashboard
-                navigate('/candidate/dashboard');
+                navigate('/candidate/dashboard'); // Or onboarding if new
             }
-        }, 1500);
+        } catch (error) {
+            console.error("Login failed", error);
+            alert("Login failed: " + (error.response?.data?.message || "Invalid credentials"));
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (

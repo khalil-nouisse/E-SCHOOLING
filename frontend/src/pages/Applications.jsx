@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { AdminService } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -7,26 +8,37 @@ import { Search, Filter, MoreHorizontal, Download, FileText } from 'lucide-react
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/Dialog';
 
 const Applications = () => {
-    // Mock data based on design system logic
-    const [applications, setApplications] = React.useState(Array.from({ length: 8 }).map((_, i) => ({
-        id: i + 1,
-        userId: `STU-${2024000 + i + 1}`,
-        name: ['Alice Wong', 'James Carter', 'Elena Rodriguez', 'Marcus Johnson', 'Sarah Chen', 'David Kim', 'Emma Wilson', 'Ryan Lee'][i],
-        email: `student${i + 1}@example.com`,
-        program: ['Computer Science', 'Business Admin', 'Engineering', 'Architecture', 'Data Science', 'Psychology', 'Law', 'Medicine'][i],
-        status: ['success', 'warning', 'error', 'neutral', 'success', 'warning', 'success', 'neutral'][i],
-        date: '2023-10-12',
-        gpa: (3.0 + Math.random() * 1.0).toFixed(2),
-        birthDate: ['1998-05-15', '1999-11-20', '2000-02-10', '1999-07-04', '2000-09-30'][i % 5],
-        bacYear: [2022, 2021, 2023][i % 3],
-        bacType: ['Scientific', 'Economics', 'Literature'][i % 3],
-        documents: [
-            { name: 'Baccalaureat_Certificate.pdf', size: '2.4 MB' },
-            { name: 'National_ID.jpg', size: '1.1 MB' },
-            { name: 'High_School_Transcript.pdf', size: '3.5 MB' }
-        ],
-        notes: "Student shows strong potential in mathematics and logic."
-    })));
+    // Mock data based on design system logic - Replaced with API
+    const [applications, setApplications] = React.useState([]);
+
+    useEffect(() => {
+        fetchInscriptions();
+    }, []);
+
+    const fetchInscriptions = async () => {
+        try {
+            const data = await AdminService.getAllInscriptions();
+            // Transform data to match UI expectations if necessary
+            const transformedData = data.map(app => ({
+                id: app.id,
+                userId: `STU-${app.studentId}`,
+                name: `${app.student.user.first_name} ${app.student.user.last_name}`,
+                email: app.student.user.email,
+                program: app.major.name,
+                status: app.status === 'VALIDATED' ? 'success' : app.status === 'REJECTED' ? 'error' : 'warning',
+                date: new Date(app.submissionDate).toLocaleDateString(),
+                gpa: "N/A", // Backend doesn't provide GPA yet
+                birthDate: "N/A", // Backend doesn't provide DOB yet
+                bacYear: app.student.baccalaureateYear,
+                bacType: app.student.baccalaureateType,
+                documents: [], // Backend provides documents via separate call or inclusion check
+                notes: app.rejectionComment || "No notes available."
+            }));
+            setApplications(transformedData);
+        } catch (error) {
+            console.error("Failed to fetch applications", error);
+        }
+    };
 
     const [selectedApplication, setSelectedApplication] = React.useState(null);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -36,15 +48,24 @@ const Applications = () => {
         setIsDialogOpen(true);
     };
 
-    const handleStatusUpdate = (status) => {
+    const handleStatusUpdate = async (status) => {
         if (!selectedApplication) return;
 
-        setApplications(apps => apps.map(app =>
-            app.id === selectedApplication.id
-                ? { ...app, status: status }
-                : app
-        ));
-        setIsDialogOpen(false);
+        try {
+            // Map UI status to Backend ENUM
+            const backendStatus = status === 'success' ? 'VALIDATED' : status === 'error' ? 'REJECTED' : 'PENDING';
+
+            await AdminService.updateInscriptionStatus(selectedApplication.id, {
+                status: backendStatus,
+                rejectionComment: status === 'error' ? 'Rejected by Admin' : null // Simple prompt could be added here
+            });
+
+            fetchInscriptions();
+            setIsDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to update status", error);
+            alert("Failed to update application status");
+        }
     };
 
     return (

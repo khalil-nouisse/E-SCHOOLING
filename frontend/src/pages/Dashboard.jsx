@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { AdminService } from '../lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -14,34 +15,63 @@ const Dashboard = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'Student' });
 
-    // Mock Data for Users
-    const [users, setUsers] = useState([
-        { id: 1, name: 'John Doe', email: 'john@university.edu', role: 'Admin' },
-        { id: 2, name: 'Jane Smith', email: 'jane@university.edu', role: 'Registrar' },
-        { id: 3, name: 'Robert Brown', email: 'robert@university.edu', role: 'Faculty' },
+    // Mock Data for Users - Replaced with API call
+    const [users, setUsers] = useState([]);
+    const [stats, setStats] = useState([
+        { label: 'Total Applications', value: '0', change: '0%', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+        { label: 'Pending Review', value: '0', change: '0%', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+        { label: 'Accepted', value: '0', change: '0%', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+        { label: 'Total Students', value: '0', change: '0%', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50' },
     ]);
+    const [recentApplications, setRecentApplications] = useState([]);
 
-    const stats = [
-        { label: 'Total Applications', value: '1,234', change: '+12%', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        { label: 'Pending Review', value: '45', change: '-2%', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
-        { label: 'Accepted', value: '892', change: '+24%', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-        { label: 'Total Students', value: '3,456', change: '+8%', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50' },
-    ];
+    useEffect(() => {
+        fetchDashboardData();
+        fetchUsers();
+    }, []);
 
-    const recentApplications = [
-        { id: 1, name: 'Alice Smith', program: 'Computer Science', status: 'success', date: '2 mins ago' },
-        { id: 2, name: 'Bob Johnson', program: 'Engineering', status: 'warning', date: '1 hour ago' },
-        { id: 3, name: 'Charlie Brown', program: 'Mathematics', status: 'error', date: '3 hours ago' },
-        { id: 4, name: 'Diana Prince', program: 'Physics', status: 'neutral', date: '5 hours ago' },
-    ];
+    const fetchDashboardData = async () => {
+        try {
+            const statsData = await AdminService.getDashboardStats();
+            const recentApps = await AdminService.getRecentApplications();
 
-    const handleDeleteUser = (id) => {
-        setUsers(users.filter(user => user.id !== id));
+            setStats([
+                { label: 'Total Applications', value: statsData.totalApplications.toString(), change: '+0%', icon: FileText, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                { label: 'Pending Review', value: statsData.pendingApplications.toString(), change: '+0%', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-50' },
+                { label: 'Accepted', value: statsData.acceptedApplications.toString(), change: '+0%', icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                { label: 'Total Students', value: statsData.totalStudents.toString(), change: '+0%', icon: Users, color: 'text-slate-600', bg: 'bg-slate-50' },
+            ]);
+
+            setRecentApplications(recentApps);
+        } catch (error) {
+            console.error("Failed to fetch dashboard data", error);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const data = await AdminService.getAllUsers();
+            setUsers(data);
+        } catch (error) {
+            console.error("Failed to fetch users", error);
+        }
+    };
+
+    const handleDeleteUser = async (id) => {
+        if (confirm('Are you sure you want to delete this user?')) {
+            try {
+                await AdminService.deleteUser(id);
+                fetchUsers();
+            } catch (error) {
+                console.error("Failed to delete user", error);
+                alert("Failed to delete user");
+            }
+        }
     };
 
     const handleEditUser = (user) => {
         setEditingUser(user);
-        setNewUserData({ name: user.name, email: user.email, role: user.role });
+        setNewUserData({ name: user.first_name + ' ' + user.last_name, email: user.email, role: user.role });
         setManageUsersView('edit');
     };
 
@@ -50,18 +80,31 @@ const Dashboard = () => {
         setManageUsersView('add');
     };
 
-    const handleSaveUser = (e) => {
+    const handleSaveUser = async (e) => {
         e.preventDefault();
-        if (manageUsersView === 'add') {
-            const newUser = {
-                id: users.length + 1,
-                ...newUserData
+        try {
+            // Split name into first and last name for simple implementation
+            const [firstName, ...lastNameParts] = newUserData.name.split(' ');
+            const lastName = lastNameParts.join(' ') || ' ';
+            const userData = {
+                first_name: firstName,
+                last_name: lastName,
+                email: newUserData.email,
+                role: newUserData.role,
+                password: 'DefaultPassword123!' // Should be handled better in production
             };
-            setUsers([...users, newUser]);
-        } else if (manageUsersView === 'edit') {
-            setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...newUserData } : u));
+
+            if (manageUsersView === 'add') {
+                await AdminService.createUser(userData);
+            } else if (manageUsersView === 'edit') {
+                await AdminService.updateUser(editingUser.id, userData);
+            }
+            fetchUsers();
+            setManageUsersView('list');
+        } catch (error) {
+            console.error("Failed to save user", error);
+            alert("Failed to save user");
         }
-        setManageUsersView('list');
     };
 
     // Reset view when closing dialog
@@ -188,7 +231,7 @@ const Dashboard = () => {
                                     {users.map((user) => (
                                         <tr key={user.id} className="hover:bg-slate-50/50">
                                             <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{user.name}</div>
+                                                <div className="font-medium text-slate-900">{user.first_name} {user.last_name}</div>
                                                 <div className="text-xs text-slate-500">{user.email}</div>
                                             </td>
                                             <td className="px-4 py-3">

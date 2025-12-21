@@ -1,5 +1,5 @@
 // modules/user/user.controller.js
-const userService = require('../services/adminService/UserServiceDashboard').default;
+const userService = require('../services/adminService/UserServiceDashboard');
 
 // Lister tous les utilisateurs
 exports.listUsers = async (req, res) => {

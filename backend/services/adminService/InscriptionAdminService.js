@@ -1,4 +1,4 @@
-import prisma from '../../src/prisma.js';
+const prisma = require('../../src/prisma');
 
 async function getAllInscriptions() {
   return prisma.inscription.findMany({

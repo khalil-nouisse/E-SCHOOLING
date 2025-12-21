@@ -1,4 +1,4 @@
-import prisma from '../../src/prisma.js';
+const prisma = require('../../src/prisma');
 
 
 async function getAllUsers() {
@@ -20,11 +20,11 @@ async function createUser(data) {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
-      password: data.password, 
+      password: data.password,
       role: data.role,
-      sex: 'MALE',
-      cin: `TMP-${Date.now()}`,
-      phoneNumber: '000000000',
+      sex: data.sex || null, // Allow null if not provided
+      cin: data.cin || null, // Allow null if not provided
+      phoneNumber: data.phoneNumber || null, // Allow null if not provided
       otp: 0
     }
   });

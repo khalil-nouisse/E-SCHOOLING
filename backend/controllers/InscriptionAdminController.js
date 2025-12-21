@@ -1,32 +1,48 @@
 // inscription.controller.js
 const service = require('../services/adminService/InscriptionAdminService');
+const path = require('path');
 
 exports.list = async (req, res) => {
-  const data = await service.getAllInscriptions();
-  res.json(data);
+  try {
+    const data = await service.getAllInscriptions();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching inscriptions:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
 exports.details = async (req, res) => {
-  const id = Number(req.params.id);
-  const data = await service.getInscriptionById(id);
-  res.json(data);
+  try {
+    const id = Number(req.params.id);
+    const data = await service.getInscriptionById(id);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching inscription details:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
 exports.updateStatus = async (req, res) => {
-  const { status, agentId, rejectionComment } = req.body;
-  const id = Number(req.params.id);
+  try {
+    const { status, agentId, rejectionComment } = req.body;
+    const id = Number(req.params.id);
 
-  const result = await service.updateInscriptionStatus(
-    id,
-    status,
-    agentId,
-    rejectionComment
-  );
+    const result = await service.updateInscriptionStatus(
+      id,
+      status,
+      agentId,
+      rejectionComment
+    );
 
-  res.json(result);
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating inscription status:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };
 
-exports.downlaodDocument = async (req, res) => {
+exports.downloadDocument = async (req, res) => {
   try {
     const { filePath, fileName } = req.query;
 
@@ -48,6 +64,11 @@ exports.downlaodDocument = async (req, res) => {
 };
 
 exports.recentApplications = async (req, res) => {
-  const data = await service.getRecentApplications(req.query.limit || 5 );
-  res.json(data);
+  try {
+    const data = await service.getRecentApplications(req.query.limit || 5);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching recent applications:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 };

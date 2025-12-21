@@ -1,4 +1,4 @@
-const prisma = require('../../src/prisma/client');
+const prisma = require('../../src/prisma');
 
 async function getDashboardStats() {
   const [

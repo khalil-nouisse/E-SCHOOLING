@@ -1,0 +1,24 @@
+# Base image
+FROM node:20-alpine
+
+# Working directory
+WORKDIR /app
+
+# Install dependencies (ensure cache invalidation only when package files change)
+COPY package*.json ./
+RUN npm install
+
+# Install necessary system dependencies (OpenSSL)
+RUN apk add --no-cache openssl
+
+# Copy source code
+COPY . .
+
+# Generate Prisma Client (Build time)
+RUN npx prisma generate
+
+# Expose port
+EXPOSE 5000
+
+# Start command (Generate client again just in case of volume overwrite, then start)
+CMD sh -c "npx prisma generate && node server.js"

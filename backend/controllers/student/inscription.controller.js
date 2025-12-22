@@ -1,4 +1,5 @@
 const service = require('../../services/student/inscription.service');
+const prisma = require('../../src/prisma');
 
 exports.apply = async (req, res) => {
     try {
@@ -8,6 +9,7 @@ exports.apply = async (req, res) => {
         const inscription = await service.createInscription(userId, req.body);
         res.status(201).json({ message: 'Application submitted successfully', inscription });
     } catch (error) {
+        console.error("Apply Error:", error);
         res.status(400).json({ message: 'Application failed', error: error.message });
     }
 };
@@ -27,12 +29,21 @@ exports.uploadDocument = async (req, res) => {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
+        const { documentType } = req.body;
         const inscriptionId = parseInt(req.params.id);
         const filePath = req.file.path;
 
-        // TODO: Save filePath to Inscription in DB (need to update schema or just return success for now)
-        // For now, we assume we just need to return success. 
-        // Real implementation should update `Inscription` table if it has a `documentPath` column.
+        await prisma.document.create({
+            data: {
+                inscriptionId: inscriptionId,
+                filePath: filePath,
+                fileName: req.file.originalname,
+                fileSize: req.file.size,
+                documentType: documentType || 'OTHER',
+                uploadDate: new Date(),
+                isVerified: false
+            }
+        });
 
         res.json({ message: 'Document uploaded successfully', filePath });
     } catch (error) {

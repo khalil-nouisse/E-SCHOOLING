@@ -51,7 +51,9 @@ model Inscription {
   rejectionComment   String?
   isFirstInscription Boolean
   baccalaureateType  String
+
   baccalaureateYear  Int
+  bacGrade           Float?  // Added for onboarding
   userId             Int
   agentId            Int?
   majorId            Int

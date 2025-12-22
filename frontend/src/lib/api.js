@@ -100,9 +100,10 @@ export const StudentService = {
         const response = await api.get('/student/my-applications');
         return response.data;
     },
-    uploadDocument: async (id, file) => {
+    uploadDocument: async (id, file, type = 'OTHER') => {
         const formData = new FormData();
         formData.append('document', file);
+        formData.append('documentType', type);
         const response = await api.post(`/student/upload/${id}`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });

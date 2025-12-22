@@ -22,14 +22,22 @@ const OnboardingWizard = () => {
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
+        sex: '',
+        cin: '',
         phone: '',
         address: '',
         bacYear: '',
+        bacGrade: '',
         bacType: '',
         majorId: '',
         program: ''
     });
-    const [selectedFile, setSelectedFile] = useState(null);
+    // Documents State
+    const [documents, setDocuments] = useState({
+        bac: null,
+        transcript: null,
+        cin: null
+    });
 
     useEffect(() => {
         const fetchMajors = async () => {
@@ -43,38 +51,70 @@ const OnboardingWizard = () => {
         fetchMajors();
     }, []);
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
-        }
+    const handleFileChange = (type, file) => {
+        setDocuments(prev => ({ ...prev, [type]: file }));
     };
 
     const handleNext = async () => {
         if (currentStep < steps.length) {
-            // Basic validation
-            if (currentStep === 3 && !formData.majorId) {
-                alert("Please select a program");
-                return;
+            // Validation Logic
+            if (currentStep === 1) {
+                if (!formData.firstName || !formData.lastName || !formData.phone || !formData.sex || !formData.cin) {
+                    alert("Please fill in all mandatory fields.");
+                    return;
+                }
             }
+            if (currentStep === 2) { // Education
+                if (!formData.bacYear || !formData.bacType || !formData.bacGrade) {
+                    alert("Please fill in all education fields.");
+                    return;
+                }
+            }
+            if (currentStep === 3) { // Documents (Moved to 3)
+                if (!documents.bac || !documents.transcript || !documents.cin) {
+                    alert("Please upload all 3 required documents.");
+                    return;
+                }
+            }
+            // Step 4 is Program Selection now? Or order changed?
+            // Let's reorder: 1.Info, 2.Education, 3.Documents, 4.Program, 5.Review
+
+            // Current steps definition needs update. 
+            // Warning: logic below depends on `steps` array
+
             setCurrentStep(currentStep + 1);
         } else {
             // Submit
             try {
                 // 1. Create Inscription
                 const response = await StudentService.apply({
-                    majorId: parseInt(formData.majorId), // Ensure int
+                    majorId: parseInt(formData.majorId),
                     baccalaureateType: formData.bacType,
-                    baccalaureateYear: parseInt(formData.bacYear) // Ensure int
+                    baccalaureateYear: parseInt(formData.bacYear),
+                    bacGrade: parseFloat(formData.bacGrade),
+                    sex: formData.sex,
+                    cin: formData.cin,
+                    phoneNumber: formData.phone
                 });
 
-                // 2. Upload Document if exists
-                if (selectedFile && response.inscription && response.inscription.id) {
-                    await StudentService.uploadDocument(response.inscription.id, selectedFile);
+                console.log("Apply Response:", response);
+                const inscriptionId = response.inscription?.id;
+
+                if (!inscriptionId) {
+                    throw new Error("Application submitted but inscription ID missing in response.");
                 }
+
+                // 2. Upload Documents Sequentially
+                if (documents.bac) await StudentService.uploadDocument(inscriptionId, documents.bac, 'BAC_CERTIFICATE');
+                if (documents.transcript) await StudentService.uploadDocument(inscriptionId, documents.transcript, 'TRANSCRIPT');
+                if (documents.cin) await StudentService.uploadDocument(inscriptionId, documents.cin, 'CIN_CARD');
 
                 navigate('/student/dashboard');
             } catch (error) {
                 console.error("Application failed", error);
+                if (error.response) {
+                    console.error("Server Error Response:", error.response.data);
+                }
                 const serverError = error.response?.data?.error || error.response?.data?.message || error.message;
                 alert("Application failed: " + serverError);
             }
@@ -144,9 +184,28 @@ const OnboardingWizard = () => {
                                     <Input id="lastName" placeholder="Doe" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                                 </div>
                             </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="sex">Sex</Label>
+                                    <select
+                                        id="sex"
+                                        className="flex h-10 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500"
+                                        value={formData.sex}
+                                        onChange={(e) => setFormData({ ...formData, sex: e.target.value })}
+                                    >
+                                        <option value="">Select Sex</option>
+                                        <option value="MALE">Male</option>
+                                        <option value="FEMALE">Female</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="cin">CIN (National ID)</Label>
+                                    <Input id="cin" placeholder="e.g. AB123456" value={formData.cin} onChange={(e) => setFormData({ ...formData, cin: e.target.value })} />
+                                </div>
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="phone">Phone Number</Label>
-                                <Input id="phone" placeholder="+1 234 567 890" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                                <Input id="phone" placeholder="+212 6..." value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="address">Address</Label>
@@ -164,6 +223,10 @@ const OnboardingWizard = () => {
                                     <Input id="bacYear" type="number" placeholder="2023" value={formData.bacYear} onChange={(e) => setFormData({ ...formData, bacYear: e.target.value })} />
                                 </div>
                                 <div className="space-y-2">
+                                    <Label htmlFor="bacGrade">Bac Grade (/20)</Label>
+                                    <Input id="bacGrade" type="number" step="0.01" min="0" max="20" placeholder="15.5" value={formData.bacGrade} onChange={(e) => setFormData({ ...formData, bacGrade: e.target.value })} />
+                                </div>
+                                <div className="space-y-2">
                                     <Label htmlFor="bacType">Baccalaureat Type</Label>
                                     <select
                                         id="bacType"
@@ -178,38 +241,80 @@ const OnboardingWizard = () => {
                                     </select>
                                 </div>
                             </div>
+
+                        </div>
+                    )}
+
+                    {/* Step 3: Documents */}
+                    {currentStep === 3 && (
+                        <div className="space-y-6">
+                            {/* Baccalaureate */}
                             <div className="space-y-2">
-                                <Label>Upload Documents</Label>
+                                <Label>1. Baccalaureate Certificate <span className="text-rose-500">*</span></Label>
                                 <div
-                                    className="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition cursor-pointer relative"
-                                    onClick={() => document.getElementById('file-upload').click()}
+                                    className={cn("border-2 border-dashed rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition", documents.bac ? "border-indigo-500 bg-indigo-50" : "border-slate-200")}
+                                    onClick={() => document.getElementById('file-bac').click()}
                                 >
-                                    <input
-                                        id="file-upload"
-                                        type="file"
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                        accept=".pdf,image/*"
-                                    />
-                                    {selectedFile ? (
-                                        <>
-                                            <FileText className="h-8 w-8 text-indigo-500 mb-2" />
-                                            <p className="text-sm font-medium text-slate-700">{selectedFile.name}</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="h-8 w-8 text-slate-400 mb-2" />
-                                            <p className="text-sm font-medium text-slate-700">Click to upload Baccalaureat Certificate</p>
-                                            <p className="text-xs text-slate-500 mt-1">PDF or JPG up to 5MB</p>
-                                        </>
-                                    )}
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", documents.bac ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-400")}>
+                                            <FileText className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900">{documents.bac ? documents.bac.name : "Click to upload"}</p>
+                                            <p className="text-xs text-slate-500">PDF or Image (Max 5MB)</p>
+                                        </div>
+                                    </div>
+                                    {documents.bac && <CheckCircle className="h-5 w-5 text-indigo-600" />}
+                                    <input id="file-bac" type="file" className="hidden" accept=".pdf,image/*" onChange={(e) => handleFileChange('bac', e.target.files[0])} />
+                                </div>
+                            </div>
+
+                            {/* Transcript */}
+                            <div className="space-y-2">
+                                <Label>2. High School Transcript <span className="text-rose-500">*</span></Label>
+                                <div
+                                    className={cn("border-2 border-dashed rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition", documents.transcript ? "border-indigo-500 bg-indigo-50" : "border-slate-200")}
+                                    onClick={() => document.getElementById('file-transcript').click()}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", documents.transcript ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-400")}>
+                                            <FileText className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900">{documents.transcript ? documents.transcript.name : "Click to upload"}</p>
+                                            <p className="text-xs text-slate-500">PDF or Image (Max 5MB)</p>
+                                        </div>
+                                    </div>
+                                    {documents.transcript && <CheckCircle className="h-5 w-5 text-indigo-600" />}
+                                    <input id="file-transcript" type="file" className="hidden" accept=".pdf,image/*" onChange={(e) => handleFileChange('transcript', e.target.files[0])} />
+                                </div>
+                            </div>
+
+                            {/* CIN */}
+                            <div className="space-y-2">
+                                <Label>3. National ID Card (CIN) <span className="text-rose-500">*</span></Label>
+                                <div
+                                    className={cn("border-2 border-dashed rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition", documents.cin ? "border-indigo-500 bg-indigo-50" : "border-slate-200")}
+                                    onClick={() => document.getElementById('file-cin').click()}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", documents.cin ? "bg-indigo-100 text-indigo-600" : "bg-slate-100 text-slate-400")}>
+                                            <FileText className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-900">{documents.cin ? documents.cin.name : "Click to upload"}</p>
+                                            <p className="text-xs text-slate-500">Front & Back in one file if possible</p>
+                                        </div>
+                                    </div>
+                                    {documents.cin && <CheckCircle className="h-5 w-5 text-indigo-600" />}
+                                    <input id="file-cin" type="file" className="hidden" accept=".pdf,image/*" onChange={(e) => handleFileChange('cin', e.target.files[0])} />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Step 3: Program Selection */}
-                    {currentStep === 3 && (
+                    {/* Step 4: Program Selection */}
+                    {currentStep === 4 && (
                         <div className="space-y-4">
                             <div className="space-y-2">
                                 <Label>Select Desired Program</Label>
@@ -236,8 +341,8 @@ const OnboardingWizard = () => {
                         </div>
                     )}
 
-                    {/* Step 4: Review */}
-                    {currentStep === 4 && (
+                    {/* Step 5: Review */}
+                    {currentStep === 5 && (
                         <div className="space-y-6">
                             <div className="rounded-lg bg-indigo-50 p-4 border border-indigo-100">
                                 <h3 className="font-semibold text-indigo-900 mb-2">Confirm Your Details</h3>
@@ -247,16 +352,24 @@ const OnboardingWizard = () => {
                                         <dd className="text-sm font-medium text-indigo-900">{formData.firstName} {formData.lastName}</dd>
                                     </div>
                                     <div>
+                                        <dt className="text-xs font-medium text-indigo-600/70 uppercase">CIN & Sex</dt>
+                                        <dd className="text-sm font-medium text-indigo-900">{formData.cin} | {formData.sex}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-xs font-medium text-indigo-600/70 uppercase">Education</dt>
+                                        <dd className="text-sm font-medium text-indigo-900">{formData.bacType} ({formData.bacYear}) - Grade: {formData.bacGrade}/20</dd>
+                                    </div>
+                                    <div>
                                         <dt className="text-xs font-medium text-indigo-600/70 uppercase">Program</dt>
                                         <dd className="text-sm font-medium text-indigo-900">{formData.program}</dd>
                                     </div>
-                                    <div>
-                                        <dt className="text-xs font-medium text-indigo-600/70 uppercase">Bac Year</dt>
-                                        <dd className="text-sm font-medium text-indigo-900">{formData.bacYear}</dd>
-                                    </div>
-                                    <div>
+                                    <div className="sm:col-span-2">
                                         <dt className="text-xs font-medium text-indigo-600/70 uppercase">Documents</dt>
-                                        <dd className="text-sm font-medium text-indigo-900">{selectedFile ? selectedFile.name : 'No file uploaded'}</dd>
+                                        <dd className="text-sm font-medium text-indigo-900 flex gap-2 mt-1">
+                                            <Badge variant="outline" className="bg-white">{documents.bac?.name}</Badge>
+                                            <Badge variant="outline" className="bg-white">{documents.transcript?.name}</Badge>
+                                            <Badge variant="outline" className="bg-white">{documents.cin?.name}</Badge>
+                                        </dd>
                                     </div>
                                 </dl>
                             </div>

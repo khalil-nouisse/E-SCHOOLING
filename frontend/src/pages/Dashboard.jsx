@@ -13,7 +13,7 @@ const Dashboard = () => {
     const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
     const [manageUsersView, setManageUsersView] = useState('list'); // 'list', 'add', 'edit'
     const [editingUser, setEditingUser] = useState(null);
-    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'Student' });
+    const [newUserData, setNewUserData] = useState({ firstName: '', lastName: '', email: '', role: 'STUDENT', password: '', phoneNumber: '', cin: '', sex: '' });
 
     // Mock Data for Users - Replaced with API call
     const [users, setUsers] = useState([]);
@@ -71,30 +71,47 @@ const Dashboard = () => {
 
     const handleEditUser = (user) => {
         setEditingUser(user);
-        setNewUserData({ name: user.first_name + ' ' + user.last_name, email: user.email, role: user.role });
+        setNewUserData({
+            firstName: user.first_name,
+            lastName: user.last_name,
+            email: user.email,
+            role: user.role,
+            phoneNumber: user.phoneNumber || '',
+            cin: user.cin || '',
+            sex: user.sex || '',
+            password: '' // Don't show password on edit, only for reset/new
+        });
         setManageUsersView('edit');
     };
 
     const handleAddUser = () => {
-        setNewUserData({ name: '', email: '', role: 'Student' });
+        setNewUserData({ firstName: '', lastName: '', email: '', role: 'STUDENT', password: '', phoneNumber: '', cin: '', sex: '' });
         setManageUsersView('add');
     };
 
     const handleSaveUser = async (e) => {
         e.preventDefault();
         try {
-            // Split name into first and last name for simple implementation
-            const [firstName, ...lastNameParts] = newUserData.name.split(' ');
-            const lastName = lastNameParts.join(' ') || ' ';
             const userData = {
-                first_name: firstName,
-                last_name: lastName,
+                first_name: newUserData.firstName,
+                last_name: newUserData.lastName,
                 email: newUserData.email,
                 role: newUserData.role,
-                password: 'DefaultPassword123!' // Should be handled better in production
+                phoneNumber: newUserData.phoneNumber,
+                cin: newUserData.cin,
+                sex: newUserData.sex || null, // Ensure empty string becomes null for Enum
             };
 
+            // Only send password if it's set (for create) or updated (for edit)
+            if (newUserData.password) {
+                userData.password = newUserData.password;
+            }
+
             if (manageUsersView === 'add') {
+                if (!userData.password) {
+                    alert("Password is required for new users.");
+                    return;
+                }
                 await AdminService.createUser(userData);
             } else if (manageUsersView === 'edit') {
                 await AdminService.updateUser(editingUser.id, userData);
@@ -103,7 +120,7 @@ const Dashboard = () => {
             setManageUsersView('list');
         } catch (error) {
             console.error("Failed to save user", error);
-            alert("Failed to save user");
+            alert("Failed to save user. Please check inputs.");
         }
     };
 
@@ -275,16 +292,29 @@ const Dashboard = () => {
 
                 {(manageUsersView === 'add' || manageUsersView === 'edit') && (
                     <form onSubmit={handleSaveUser} className="space-y-4 my-4">
-                        <div className="grid gap-2">
-                            <Label htmlFor="name">Full Name</Label>
-                            <Input
-                                id="name"
-                                value={newUserData.name}
-                                onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
-                                placeholder="e.g. Jane Doe"
-                                required
-                            />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="firstName">First Name</Label>
+                                <Input
+                                    id="firstName"
+                                    value={newUserData.firstName}
+                                    onChange={(e) => setNewUserData({ ...newUserData, firstName: e.target.value })}
+                                    placeholder="e.g. Jane"
+                                    required
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="lastName">Last Name</Label>
+                                <Input
+                                    id="lastName"
+                                    value={newUserData.lastName}
+                                    onChange={(e) => setNewUserData({ ...newUserData, lastName: e.target.value })}
+                                    placeholder="e.g. Doe"
+                                    required
+                                />
+                            </div>
                         </div>
+
                         <div className="grid gap-2">
                             <Label htmlFor="email">Email Address</Label>
                             <Input
@@ -296,20 +326,71 @@ const Dashboard = () => {
                                 required
                             />
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="role">Role</Label>
-                            <select
-                                id="role"
-                                className="flex h-10 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500"
-                                value={newUserData.role}
-                                onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
-                            >
-                                <option value="Student">Student</option>
-                                <option value="Faculty">Faculty</option>
-                                <option value="Admin">Admin</option>
-                                <option value="Registrar">Registrar</option>
-                            </select>
+
+                        {manageUsersView === 'add' && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={newUserData.password}
+                                    onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                                    placeholder="••••••••"
+                                    required
+                                />
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="phoneNumber">Phone Number</Label>
+                                <Input
+                                    id="phoneNumber"
+                                    value={newUserData.phoneNumber}
+                                    onChange={(e) => setNewUserData({ ...newUserData, phoneNumber: e.target.value })}
+                                    placeholder="+212 6..."
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="cin">CIN</Label>
+                                <Input
+                                    id="cin"
+                                    value={newUserData.cin}
+                                    onChange={(e) => setNewUserData({ ...newUserData, cin: e.target.value })}
+                                    placeholder="AB123456"
+                                />
+                            </div>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="role">Role</Label>
+                                <select
+                                    id="role"
+                                    className="flex h-10 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500"
+                                    value={newUserData.role}
+                                    onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+                                >
+                                    <option value="STUDENT">Student</option>
+                                    <option value="ADMIN">Admin</option>
+                                    <option value="AGENT">Agent</option>
+                                </select>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="sex">Sex</Label>
+                                <select
+                                    id="sex"
+                                    className="flex h-10 w-full rounded-md border border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/10 focus-visible:border-indigo-500"
+                                    value={newUserData.sex}
+                                    onChange={(e) => setNewUserData({ ...newUserData, sex: e.target.value })}
+                                >
+                                    <option value="">Select Sex</option>
+                                    <option value="MALE">Male</option>
+                                    <option value="FEMALE">Female</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <DialogFooter className="mt-6">
                             <Button type="button" variant="secondary" onClick={() => setManageUsersView('list')}>
                                 Cancel

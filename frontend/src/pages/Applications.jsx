@@ -21,17 +21,17 @@ const Applications = () => {
             // Transform data to match UI expectations if necessary
             const transformedData = data.map(app => ({
                 id: app.id,
-                userId: `STU-${app.studentId}`,
-                name: `${app.student.user.first_name} ${app.student.user.last_name}`,
-                email: app.student.user.email,
-                program: app.major.name,
+                userId: `USR-${app.userId}`,
+                name: app.user ? `${app.user.first_name} ${app.user.last_name}` : 'Unknown',
+                email: app.user ? app.user.email : 'N/A',
+                program: app.major ? app.major.name : 'Unknown',
                 status: app.status === 'VALIDATED' ? 'success' : app.status === 'REJECTED' ? 'error' : 'warning',
                 date: new Date(app.submissionDate).toLocaleDateString(),
-                gpa: "N/A", // Backend doesn't provide GPA yet
-                birthDate: "N/A", // Backend doesn't provide DOB yet
-                bacYear: app.student.baccalaureateYear,
-                bacType: app.student.baccalaureateType,
-                documents: [], // Backend provides documents via separate call or inclusion check
+                gpa: "N/A",
+                birthDate: "N/A",
+                bacYear: app.baccalaureateYear,
+                bacType: app.baccalaureateType,
+                documents: [],
                 notes: app.rejectionComment || "No notes available."
             }));
             setApplications(transformedData);
@@ -48,16 +48,36 @@ const Applications = () => {
         setIsDialogOpen(true);
     };
 
-    const handleStatusUpdate = async (status) => {
+    // State for rejection dialog
+    const [isRejectDialogOpen, setIsRejectDialogOpen] = React.useState(false);
+    const [rejectionNote, setRejectionNote] = React.useState("");
+    const [isRejectionOptional, setIsRejectionOptional] = React.useState(true); // Can toggle if needed, user said optional
+
+    const openRejectDialog = () => {
+        setIsRejectDialogOpen(true);
+        setRejectionNote("");
+    };
+
+    const confirmRejection = () => {
+        handleStatusUpdate('error', rejectionNote);
+        setIsRejectDialogOpen(false);
+    };
+
+    const handleStatusUpdate = async (status, note = null) => {
         if (!selectedApplication) return;
 
         try {
             // Map UI status to Backend ENUM
             const backendStatus = status === 'success' ? 'VALIDATED' : status === 'error' ? 'REJECTED' : 'PENDING';
 
+            let comment = null;
+            if (status === 'error') {
+                comment = note || "Rejected by Admin"; // Fallback or empty if allowed
+            }
+
             await AdminService.updateInscriptionStatus(selectedApplication.id, {
                 status: backendStatus,
-                rejectionComment: status === 'error' ? 'Rejected by Admin' : null // Simple prompt could be added here
+                rejectionComment: comment
             });
 
             fetchInscriptions();
@@ -151,6 +171,7 @@ const Applications = () => {
                 </div>
             </Card>
 
+            {/* Application Detail Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogHeader>
                     <DialogTitle>Application Details</DialogTitle>
@@ -241,7 +262,7 @@ const Applications = () => {
                         <Button
                             variant="destructive"
                             className="flex-1 sm:flex-none bg-rose-600 hover:bg-rose-700 text-white"
-                            onClick={() => handleStatusUpdate('error')}
+                            onClick={openRejectDialog}
                         >
                             Reject Application
                         </Button>
@@ -252,6 +273,35 @@ const Applications = () => {
                             Accept Application
                         </Button>
                     </div>
+                </DialogFooter>
+            </Dialog>
+
+            {/* Rejection Note Dialog - Nested or Separate */}
+            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+                <DialogHeader>
+                    <DialogTitle>Reject Application</DialogTitle>
+                    <DialogDescription>Are you sure you want to reject this application? You can optionally provide a reason.</DialogDescription>
+                </DialogHeader>
+
+                <div className="py-4">
+                    <label className="text-sm font-medium text-slate-700 mb-1.5 block">Rejection Note (Optional)</label>
+                    <textarea
+                        className="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="e.g. Missing required documents, insufficient GPA..."
+                        value={rejectionNote}
+                        onChange={(e) => setRejectionNote(e.target.value)}
+                    />
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0">
+                    <Button variant="outline" onClick={() => setIsRejectDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        variant="destructive"
+                        onClick={confirmRejection}
+                        className="bg-rose-600 hover:bg-rose-700"
+                    >
+                        Confirm Rejection
+                    </Button>
                 </DialogFooter>
             </Dialog>
         </div>

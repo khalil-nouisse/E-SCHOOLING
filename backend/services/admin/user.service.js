@@ -1,5 +1,6 @@
 const prisma = require('../../src/prisma');
 
+const bcrypt = require('bcryptjs');
 
 async function getAllUsers() {
   return prisma.user.findMany({
@@ -15,17 +16,20 @@ async function getAllUsers() {
 
 
 async function createUser(data) {
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
   return prisma.user.create({
     data: {
       first_name: data.first_name,
       last_name: data.last_name,
       email: data.email,
-      password: data.password,
+      password: hashedPassword,
       role: data.role,
-      sex: data.sex || null, // Allow null if not provided
-      cin: data.cin || null, // Allow null if not provided
-      phoneNumber: data.phoneNumber || null, // Allow null if not provided
-      otp: 0
+      sex: data.sex || null,
+      cin: data.cin || null,
+      phoneNumber: data.phoneNumber || null,
+      otp: 0,
+      isVerified: true // Admin-created users are verified by default
     }
   });
 }

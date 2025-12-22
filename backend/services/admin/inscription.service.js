@@ -36,14 +36,42 @@ async function getInscriptionById(id) {
 }
 
 async function updateInscriptionStatus(id, status, agentId, rejectionComment) {
-  return prisma.inscription.update({
-    where: { id },
-    data: {
-      status,
-      validationDate: status === 'VALIDATED' ? new Date() : null,
-      rejectionComment: status === 'REJECTED' ? rejectionComment : null,
-      agentId
+  return prisma.$transaction(async (tx) => {
+    // 1. Update the Inscription
+    const inscription = await tx.inscription.update({
+      where: { id },
+      data: {
+        status,
+        validationDate: status === 'VALIDATED' ? new Date() : null,
+        rejectionComment: status === 'REJECTED' ? rejectionComment : null,
+        agentId
+      },
+      include: { user: true } // Need user ID
+    });
+
+    // 2. If Validated, promote User to Student
+    if (status === 'VALIDATED') {
+      // Update Role
+      await tx.user.update({
+        where: { id: inscription.userId },
+        data: { role: 'STUDENT' }
+      });
+
+      // Create Student Record if not exists
+      // Generate a simple student code (e.g., STU-YYYY-USERID)
+      const studentCode = `STU-${new Date().getFullYear()}-${inscription.userId}`;
+
+      await tx.student.upsert({
+        where: { id: inscription.userId },
+        create: {
+          id: inscription.userId,
+          statusCodeStudent: studentCode
+        },
+        update: {} // Already exists, do nothing
+      });
     }
+
+    return inscription;
   });
 }
 

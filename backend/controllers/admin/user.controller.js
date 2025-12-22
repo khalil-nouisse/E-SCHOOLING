@@ -26,7 +26,8 @@ exports.addUser = async (req, res) => {
 // Modifier un utilisateur
 exports.editUser = async (req, res) => {
   try {
-    const user = await userService.updateUser(req.params.id, req.body);
+    const id = parseInt(req.params.id);
+    const user = await userService.updateUser(id, req.body);
     res.json(user);
   } catch (err) {
     console.error(err);
@@ -37,7 +38,8 @@ exports.editUser = async (req, res) => {
 // Supprimer un utilisateur
 exports.removeUser = async (req, res) => {
   try {
-    await userService.deleteUser(req.params.id);
+    const id = parseInt(req.params.id);
+    await userService.deleteUser(id);
     res.json({ message: 'User deleted successfully' });
   } catch (err) {
     console.error(err);

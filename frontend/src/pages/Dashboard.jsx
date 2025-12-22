@@ -199,7 +199,7 @@ const Dashboard = () => {
                         <CardDescription className="text-indigo-100">Manage your administrative tasks efficiently.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button variant="secondary" className="w-full justify-between">
+                        <Button variant="secondary" className="w-full justify-between" onClick={() => window.open('http://localhost:5000/api/admin/dashboard/reports/generate', '_blank')}>
                             Generate Reports
                             <ArrowRight className="h-4 w-4" />
                         </Button>

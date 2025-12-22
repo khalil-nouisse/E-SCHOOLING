@@ -14,3 +14,5 @@ logs/
 
 # macOS
 .DS_Store
+
+uploads/documents/*

@@ -10,6 +10,8 @@ import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } fr
 const Applications = () => {
     // Mock data based on design system logic - Replaced with API
     const [applications, setApplications] = React.useState([]);
+    const [searchQuery, setSearchQuery] = React.useState("");
+    const [statusFilter, setStatusFilter] = React.useState("ALL"); // ALL, success, warning, error
 
     useEffect(() => {
         fetchInscriptions();
@@ -39,6 +41,17 @@ const Applications = () => {
             console.error("Failed to fetch applications", error);
         }
     };
+
+    const filteredApplications = applications.filter(app => {
+        const matchesSearch =
+            app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            app.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            app.id.toString().includes(searchQuery);
+
+        const matchesStatus = statusFilter === "ALL" || app.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+    });
 
     const [selectedApplication, setSelectedApplication] = React.useState(null);
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -104,18 +117,31 @@ const Applications = () => {
             </div>
 
             <Card>
-                <div className="flex items-center gap-4 p-4 border-b border-slate-100">
-                    <div className="relative flex-1 max-w-sm">
+                <div className="flex items-center gap-4 p-4 border-b border-slate-100 flex-wrap sm:flex-nowrap">
+                    <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                         <Input
-                            placeholder="Filter applications..."
+                            placeholder="Filter by name, email, or ID..."
                             className="pl-9"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button variant="secondary" size="sm">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Filters
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Filter className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500 pointer-events-none" />
+                            <select
+                                className="h-10 w-[180px] rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="ALL">All Status</option>
+                                <option value="success">Admitted</option>
+                                <option value="warning">Pending</option>
+                                <option value="error">Rejected</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div className="relative w-full overflow-auto">
                     <table className="w-full caption-bottom text-sm text-left">
@@ -130,40 +156,50 @@ const Applications = () => {
                             </tr>
                         </thead>
                         <tbody className="[&_tr:last-child]:border-0">
-                            {applications.map((app) => (
-                                <tr
-                                    key={app.id}
-                                    onClick={() => handleRowClick(app)}
-                                    className="border-b transition-colors hover:bg-slate-50 data-[state=selected]:bg-slate-50 cursor-pointer"
-                                >
-                                    <td className="p-4 align-middle font-medium text-slate-600">#{app.id.toString().padStart(4, '0')}</td>
-                                    <td className="p-4 align-middle">
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-900">{app.name}</span>
-                                            <span className="text-xs text-slate-500">{app.email}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4 align-middle text-slate-600">{app.program}</td>
-                                    <td className="p-4 align-middle text-slate-600 tabular-nums">{app.date}</td>
-                                    <td className="p-4 align-middle">
-                                        <Badge variant={app.status}>
-                                            {app.status === 'success' ? 'Admitted' :
-                                                app.status === 'warning' ? 'Pending' :
-                                                    app.status === 'error' ? 'Rejected' : 'Under Review'}
-                                        </Badge>
-                                    </td>
-                                    <td className="p-4 align-middle text-right">
-                                        <Button variant="ghost" size="icon">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
+                            {filteredApplications.length > 0 ? (
+                                filteredApplications.map((app) => (
+                                    <tr
+                                        key={app.id}
+                                        onClick={() => handleRowClick(app)}
+                                        className="border-b transition-colors hover:bg-slate-50 data-[state=selected]:bg-slate-50 cursor-pointer"
+                                    >
+                                        <td className="p-4 align-middle font-medium text-slate-600">#{app.id.toString().padStart(4, '0')}</td>
+                                        <td className="p-4 align-middle">
+                                            <div className="flex flex-col">
+                                                <span className="font-medium text-slate-900">{app.name}</span>
+                                                <span className="text-xs text-slate-500">{app.email}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 align-middle text-slate-600">{app.program}</td>
+                                        <td className="p-4 align-middle text-slate-600 tabular-nums">{app.date}</td>
+                                        <td className="p-4 align-middle">
+                                            <Badge variant={app.status}>
+                                                {app.status === 'success' ? 'Admitted' :
+                                                    app.status === 'warning' ? 'Pending' :
+                                                        app.status === 'error' ? 'Rejected' : 'Under Review'}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-4 align-middle text-right">
+                                            <Button variant="ghost" size="icon">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                                        No applications found matching your filters.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
                 <div className="flex items-center justify-between p-4 border-t border-slate-100">
-                    <span className="text-sm text-slate-500">Showing 1-8 of 100 applications</span>
+                    <span className="text-sm text-slate-500">
+                        Showing {filteredApplications.length > 0 ? 1 : 0}-{filteredApplications.length} of {applications.length} applications
+                    </span>
                     <div className="flex items-center gap-2">
                         <Button variant="secondary" size="sm" disabled>Previous</Button>
                         <Button variant="secondary" size="sm">Next</Button>

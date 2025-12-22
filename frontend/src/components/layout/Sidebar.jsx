@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { AuthService } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import {
     LayoutDashboard,
@@ -15,6 +16,11 @@ const Sidebar = () => {
         { icon: Files, label: 'Applications', to: '/applications' },
         { icon: Settings, label: 'Settings', to: '/settings' },
     ];
+
+    const handleLogout = () => {
+        AuthService.logout();
+        window.location.href = '/login'; // Force reload/redirect to clear state
+    };
 
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 bg-slate-50/50">
@@ -46,7 +52,10 @@ const Sidebar = () => {
                     ))}
                 </nav>
 
-                <button className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-700">
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-rose-50 hover:text-rose-700 w-full text-left"
+                >
                     <LogOut className="h-4 w-4" />
                     Sign Out
                 </button>

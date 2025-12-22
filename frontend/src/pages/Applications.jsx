@@ -29,11 +29,16 @@ const Applications = () => {
                 program: app.major ? app.major.name : 'Unknown',
                 status: app.status === 'VALIDATED' ? 'success' : app.status === 'REJECTED' ? 'error' : 'warning',
                 date: new Date(app.submissionDate).toLocaleDateString(),
-                gpa: "N/A",
-                birthDate: "N/A",
+                gpa: app.bacGrade ? `${app.bacGrade}/20` : "N/A",
+                birthDate: "N/A", // Not in Inscription model yet?
                 bacYear: app.baccalaureateYear,
                 bacType: app.baccalaureateType,
-                documents: [],
+                documents: app.documents ? app.documents.map(d => ({
+                    id: d.id,
+                    name: d.documentType ? d.documentType.replace('_', ' ') : d.fileName,
+                    fileName: d.fileName,
+                    size: (d.fileSize / 1024).toFixed(1) + ' KB'
+                })) : [],
                 notes: app.rejectionComment || "No notes available."
             }));
             setApplications(transformedData);
@@ -74,6 +79,13 @@ const Applications = () => {
     const confirmRejection = () => {
         handleStatusUpdate('error', rejectionNote);
         setIsRejectDialogOpen(false);
+    };
+
+    const handleDownload = (docId) => {
+        // Direct download via window.open since it's a GET request causing a download
+        // Ensure you have the correct base URL. Since we are in frontend, we use relative path if proxy is set, or full URL.
+        // Assuming Vite proxy matches /api to backend.
+        window.open(`http://localhost:5000/api/admin/inscriptions/documents/download/${docId}`, '_blank');
     };
 
     const handleStatusUpdate = async (status, note = null) => {
@@ -274,7 +286,7 @@ const Applications = () => {
                                                 <p className="text-xs text-slate-500">{doc.size}</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600">
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-indigo-600" onClick={() => handleDownload(doc.id)}>
                                             <Download className="h-4 w-4" />
                                         </Button>
                                     </div>

@@ -4,7 +4,8 @@ async function getAllInscriptions() {
   return prisma.inscription.findMany({
     include: {
       user: true,
-      major: true
+      major: true,
+      documents: true
     },
     orderBy: {
       submissionDate: 'desc'

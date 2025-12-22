@@ -6,12 +6,16 @@ import { Button } from '../components/ui/Button';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../components/ui/Dialog';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { Users, FileText, CheckCircle, Clock, ArrowRight, Trash2, Edit2 } from 'lucide-react';
+import { useToast } from '../components/ui/Toast';
+import ConfirmationModal from '../components/ui/ConfirmationModal';
+import { Users, FileText, CheckCircle, Clock, ArrowRight, Trash2, Edit2, Search } from 'lucide-react';
 
 const Dashboard = () => {
+    const { addToast } = useToast();
     // Modal State
     const [isManageUsersOpen, setIsManageUsersOpen] = useState(false);
     const [manageUsersView, setManageUsersView] = useState('list'); // 'list', 'add', 'edit'
+    const [searchQuery, setSearchQuery] = useState('');
     const [editingUser, setEditingUser] = useState(null);
     const [newUserData, setNewUserData] = useState({ firstName: '', lastName: '', email: '', role: 'STUDENT', password: '', phoneNumber: '', cin: '', sex: '' });
 
@@ -45,6 +49,7 @@ const Dashboard = () => {
             setRecentApplications(recentApps);
         } catch (error) {
             console.error("Failed to fetch dashboard data", error);
+            addToast("Failed to fetch dashboard data", 'error');
         }
     };
 
@@ -54,20 +59,12 @@ const Dashboard = () => {
             setUsers(data);
         } catch (error) {
             console.error("Failed to fetch users", error);
+            addToast("Failed to fetch users", 'error');
         }
     };
 
-    const handleDeleteUser = async (id) => {
-        if (confirm('Are you sure you want to delete this user?')) {
-            try {
-                await AdminService.deleteUser(id);
-                fetchUsers();
-            } catch (error) {
-                console.error("Failed to delete user", error);
-                alert("Failed to delete user");
-            }
-        }
-    };
+    // Deprecated handleDeleteUser removed
+
 
     const handleEditUser = (user) => {
         setEditingUser(user);
@@ -109,29 +106,70 @@ const Dashboard = () => {
 
             if (manageUsersView === 'add') {
                 if (!userData.password) {
-                    alert("Password is required for new users.");
+                    addToast("Password is required for new users.", 'error');
                     return;
                 }
                 await AdminService.createUser(userData);
+                addToast("User created successfully", 'success');
             } else if (manageUsersView === 'edit') {
                 await AdminService.updateUser(editingUser.id, userData);
+                addToast("User updated successfully", 'success');
             }
             fetchUsers();
             setManageUsersView('list');
         } catch (error) {
             console.error("Failed to save user", error);
-            alert("Failed to save user. Please check inputs.");
+            addToast("Failed to save user. Please check inputs.", 'error');
         }
     };
 
     // Reset view when closing dialog
     const handleOpenChange = (open) => {
         setIsManageUsersOpen(open);
-        if (!open) setTimeout(() => setManageUsersView('list'), 300);
+        if (!open) {
+            setTimeout(() => {
+                setManageUsersView('list');
+                setSearchQuery(''); // Reset search on close
+            }, 300);
+        }
+    };
+
+    // Filtered Users
+    const filteredUsers = users.filter(user => {
+        const query = searchQuery.toLowerCase();
+        return (
+            user.first_name?.toLowerCase().includes(query) ||
+            user.last_name?.toLowerCase().includes(query) ||
+            user.email?.toLowerCase().includes(query) ||
+            user.role?.toLowerCase().includes(query)
+        );
+    });
+
+    // Delete Confirmation State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+
+    const confirmDeleteUser = (id) => {
+        setUserToDelete(id);
+        setDeleteModalOpen(true);
+    };
+
+    const executeDeleteUser = async () => {
+        if (userToDelete) {
+            try {
+                await AdminService.deleteUser(userToDelete);
+                addToast("User deleted successfully", 'success');
+                fetchUsers();
+            } catch (error) {
+                console.error("Failed to delete user", error);
+                addToast("Failed to delete user", 'error');
+            }
+        }
     };
 
     return (
         <div className="space-y-6">
+            {/* ... stats ... */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
@@ -235,9 +273,24 @@ const Dashboard = () => {
 
                 {manageUsersView === 'list' && (
                     <>
-                        <div className="my-6 max-h-[60vh] overflow-y-auto">
+                        <div className="flex items-center justify-between gap-4 mb-4">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-500" />
+                                <Input
+                                    placeholder="Search users..."
+                                    className="pl-8 w-full"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Button onClick={handleAddUser}>
+                                Add New User
+                            </Button>
+                        </div>
+
+                        <div className="my-6 max-h-[60vh] overflow-y-auto border rounded-md">
                             <table className="w-full text-sm text-left">
-                                <thead className="bg-slate-50 text-slate-500 sticky top-0">
+                                <thead className="bg-slate-50 text-slate-500 sticky top-0 md:relative">
                                     <tr>
                                         <th className="px-4 py-3 font-medium">Name</th>
                                         <th className="px-4 py-3 font-medium">Role</th>
@@ -245,46 +298,51 @@ const Dashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {users.map((user) => (
-                                        <tr key={user.id} className="hover:bg-slate-50/50">
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium text-slate-900">{user.first_name} {user.last_name}</div>
-                                                <div className="text-xs text-slate-500">{user.email}</div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <Badge variant="neutral" className="font-normal">{user.role}</Badge>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-slate-500 hover:text-indigo-600"
-                                                        onClick={() => handleEditUser(user)}
-                                                    >
-                                                        <Edit2 className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
-                                                        onClick={() => handleDeleteUser(user.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
+                                    {filteredUsers.length > 0 ? (
+                                        filteredUsers.map((user) => (
+                                            <tr key={user.id} className="hover:bg-slate-50/50">
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-slate-900">{user.first_name} {user.last_name}</div>
+                                                    <div className="text-xs text-slate-500">{user.email}</div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <Badge variant="neutral" className="font-normal">{user.role}</Badge>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-slate-500 hover:text-indigo-600"
+                                                            onClick={() => handleEditUser(user)}
+                                                        >
+                                                            <Edit2 className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-slate-500 hover:text-rose-600 hover:bg-rose-50"
+                                                            onClick={() => confirmDeleteUser(user.id)}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="3" className="px-4 py-8 text-center text-slate-500">
+                                                No users found matching "{searchQuery}"
                                             </td>
                                         </tr>
-                                    ))}
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                         <DialogFooter>
-                            <Button variant="secondary" onClick={() => setIsManageUsersOpen(false)}>
+                            <Button variant="secondary" onClick={() => setIsManageUsersOpen(false)} className="w-full sm:w-auto">
                                 Close
-                            </Button>
-                            <Button onClick={handleAddUser}>
-                                Add New User
                             </Button>
                         </DialogFooter>
                     </>
@@ -402,6 +460,16 @@ const Dashboard = () => {
                     </form>
                 )}
             </Dialog>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={setDeleteModalOpen}
+                onConfirm={executeDeleteUser}
+                title="Delete User"
+                description="Are you sure you want to delete this user? This action cannot be undone."
+                confirmText="Delete"
+                variant="destructive"
+            />
         </div>
     );
 };

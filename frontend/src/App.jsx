@@ -10,26 +10,30 @@ import Settings from './pages/Settings';
 import OnboardingWizard from './pages/candidate/OnboardingWizard';
 import StudentDashboard from './pages/candidate/CandidateDashboard';
 
+import { ToastProvider } from './components/ui/Toast';
+
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+    <ToastProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route path="/candidate/onboarding" element={<OnboardingWizard />} />
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/candidate/onboarding" element={<OnboardingWizard />} />
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
 
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/applications" element={<Applications />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/applications" element={<Applications />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </ToastProvider>
   );
 }
 

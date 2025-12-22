@@ -108,6 +108,12 @@ export const StudentService = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data;
+    },
+    downloadCertificate: async () => {
+        const response = await api.get('/student/certificate/download', {
+            responseType: 'blob'
+        });
+        return response.data;
     }
 };
 

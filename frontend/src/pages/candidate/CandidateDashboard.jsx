@@ -149,7 +149,7 @@ const CandidateDashboard = () => {
                                     </div>
                                     <div className={`relative ${application.status === 'PENDING' ? 'opacity-50' : ''}`}>
                                         <div className={`absolute -left-[21px] top-1 h-3 w-3 rounded-full ring-4 ring-white ${application.status === 'VALIDATED' ? 'bg-green-500' :
-                                                application.status === 'REJECTED' ? 'bg-red-500' : 'bg-slate-300'
+                                            application.status === 'REJECTED' ? 'bg-red-500' : 'bg-slate-300'
                                             }`} />
                                         <p className="text-sm font-medium text-slate-900">Decision</p>
                                         <p className="text-xs text-slate-500">
@@ -178,7 +178,22 @@ const CandidateDashboard = () => {
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <Button variant="secondary" className="w-full text-indigo-700 font-semibold bg-white hover:bg-slate-50 border-none">
+                                    <Button variant="secondary" className="w-full text-indigo-700 font-semibold bg-white hover:bg-slate-50 border-none" onClick={async () => {
+                                        try {
+                                            const blob = await StudentService.downloadCertificate();
+                                            const url = window.URL.createObjectURL(blob);
+                                            const a = document.createElement('a');
+                                            a.href = url;
+                                            a.download = 'Admission_Certificate.pdf';
+                                            document.body.appendChild(a);
+                                            a.click();
+                                            window.URL.revokeObjectURL(url);
+                                            document.body.removeChild(a);
+                                        } catch (e) {
+                                            console.error("Download failed", e);
+                                            alert("Failed to download certificate.");
+                                        }
+                                    }}>
                                         Download PDF
                                     </Button>
                                 </CardContent>
